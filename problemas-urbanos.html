@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Problemas Urbanos</title>
+<style>
+  :root {
+    --bg: #f3f5f9; --card: #fff; --text: #1f2937; --muted: #6b7280; --border: #e5e7eb;
+    --primary: #0f766e; --primary-h: #115e59;
+    --aberto: #dc2626; --aberto-bg: #fee2e2;
+    --analise: #b45309; --analise-bg: #fef3c7;
+    --resolvido: #15803d; --resolvido-bg: #dcfce7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: var(--bg); color: var(--text); }
+  header { background: var(--primary); color: #fff; padding: 22px 16px; }
+  header .in { max-width: 1000px; margin: 0 auto; }
+  header h1 { margin: 0; font-size: 1.6rem; }
+  header p { margin: 4px 0 0; opacity: .85; }
+  .container { max-width: 1000px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .stat .n { font-size: 1.6rem; font-weight: 700; }
+  .stat .l { font-size: .8rem; color: var(--muted); }
+  .stat.aberto .n { color: var(--aberto); }
+  .stat.analise .n { color: var(--analise); }
+  .stat.resolvido .n { color: var(--resolvido); }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+          padding: 20px; margin-bottom: 20px; }
+  .card h2 { margin: 0 0 16px; font-size: 1.1rem; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .full { grid-column: 1 / -1; }
+  label { display: block; font-size: .85rem; color: var(--muted); margin-bottom: 4px; }
+  input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+          border-radius: 8px; font-size: 1rem; font-family: inherit; background: #fff; color: var(--text); }
+  textarea { resize: vertical; min-height: 80px; }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+
+  button { border: 0; border-radius: 8px; padding: 10px 16px; font-size: .95rem; cursor: pointer;
+           font-weight: 500; font-family: inherit; }
+  button:disabled { opacity: .6; cursor: default; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-h); }
+  .btn-secondary { background: #e5e7eb; color: var(--text); }
+  .actions { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .filtros { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+
+  .lista { display: grid; gap: 12px; }
+  .item { border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+          border-left: 5px solid var(--aberto); }
+  .item.em-analise { border-left-color: var(--analise); }
+  .item.resolvido { border-left-color: var(--resolvido); }
+  .item-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+  .tipo { font-weight: 600; font-size: 1.05rem; }
+  .local { color: var(--muted); font-size: .9rem; margin-top: 2px; }
+  .desc { margin: 10px 0; line-height: 1.45; white-space: pre-wrap; }
+  .meta { font-size: .8rem; color: var(--muted); }
+  .badge { font-size: .78rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+  .badge.aberto { background: var(--aberto-bg); color: var(--aberto); }
+  .badge.em-analise { background: var(--analise-bg); color: var(--analise); }
+  .badge.resolvido { background: var(--resolvido-bg); color: var(--resolvido); }
+  .item-acoes { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+  .btn-sm { padding: 6px 10px; font-size: .85rem; }
+  .btn-apoio { background: #e0f2fe; color: #0369a1; }
+  .btn-apoio.ja { background: #bae6fd; }
+  .btn-edit { background: #fef3c7; color: #92400e; }
+  .btn-del { background: #fee2e2; color: var(--aberto); }
+  .item-acoes select { width: auto; padding: 6px 8px; font-size: .85rem; }
+  .empty { text-align: center; color: var(--muted); padding: 30px; }
+
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(120px);
+           background: var(--text); color: #fff; padding: 12px 18px; border-radius: 8px;
+           transition: transform .3s; z-index: 10; max-width: 90vw; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.erro { background: var(--aberto); }
+  .toast.ok { background: var(--resolvido); }
+
+  header .in { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .auth { display: flex; align-items: center; gap: 10px; font-size: .9rem; }
+  .btn-light { background: rgba(255,255,255,.18); color: #fff; }
+  .btn-light:hover { background: rgba(255,255,255,.3); }
+
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none;
+              align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+  .modal-bg.show { display: flex; }
+  .modal { background: var(--card); border-radius: 12px; padding: 22px; width: 100%; max-width: 360px; }
+  .modal h2 { margin: 0 0 16px; font-size: 1.15rem; }
+  .modal .campo { margin-bottom: 12px; }
+  .modal .erro { color: var(--aberto); font-size: .88rem; min-height: 1.2em; margin: 4px 0 0; }
+
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .grid, .filtros { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="in">
+    <div>
+      <h1>📍 Problemas Urbanos</h1>
+      <p>Registre e acompanhe problemas da sua cidade</p>
+    </div>
+    <div class="auth">
+      <span id="auth-info"></span>
+      <button class="btn-light btn-sm" id="btn-login">🔒 Entrar (administrador)</button>
+      <button class="btn-light btn-sm" id="btn-logout" hidden>Sair</button>
+    </div>
+  </div>
+</header>
+
+<div class="modal-bg" id="modal-login">
+  <form class="modal" id="form-login">
+    <h2>Acesso do administrador</h2>
+    <div class="campo">
+      <label for="login-email">E-mail</label>
+      <input id="login-email" type="email" required autocomplete="username">
+    </div>
+    <div class="campo">
+      <label for="login-senha">Senha</label>
+      <input id="login-senha" type="password" required autocomplete="current-password">
+    </div>
+    <p class="erro" id="login-erro"></p>
+    <div class="actions">
+      <button type="submit" class="btn-primary" id="btn-entrar">Entrar</button>
+      <button type="button" class="btn-secondary" id="btn-fechar-login">Cancelar</button>
+    </div>
+  </form>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="n" id="st-total">0</div><div class="l">Total</div></div>
+    <div class="stat aberto"><div class="n" id="st-aberto">0</div><div class="l">Abertos</div></div>
+    <div class="stat analise"><div class="n" id="st-analise">0</div><div class="l">Em análise</div></div>
+    <div class="stat resolvido"><div class="n" id="st-resolvido">0</div><div class="l">Resolvidos</div></div>
+  </div>
+
+  <div class="card">
+    <h2 id="form-titulo">Registrar problema</h2>
+    <form id="form">
+      <input type="hidden" id="id">
+      <div class="grid">
+        <div>
+          <label for="tipo">Tipo de problema *</label>
+          <select id="tipo" required>
+            <option value="">Selecione...</option>
+          </select>
+        </div>
+        <div>
+          <label for="status">Status</label>
+          <select id="status">
+            <option value="aberto">Aberto</option>
+            <option value="em-analise">Em análise</option>
+            <option value="resolvido">Resolvido</option>
+          </select>
+        </div>
+        <div>
+          <label for="endereco">Endereço / referência *</label>
+          <input id="endereco" required placeholder="Ex.: Rua das Flores, 120 - em frente à padaria">
+        </div>
+        <div>
+          <label for="bairro">Bairro *</label>
+          <input id="bairro" required placeholder="Ex.: Centro">
+        </div>
+        <div class="full">
+          <label for="descricao">Descrição *</label>
+          <textarea id="descricao" required placeholder="Descreva o problema, há quanto tempo existe, riscos..."></textarea>
+        </div>
+        <div>
+          <label for="autor">Seu nome (opcional)</label>
+          <input id="autor" placeholder="Anônimo">
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit" class="btn-primary" id="btn-salvar">Registrar</button>
+        <button type="button" class="btn-secondary" id="btn-cancelar" hidden>Cancelar edição</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Problemas registrados</h2>
+    <div class="filtros">
+      <input id="busca" placeholder="Buscar por endereço, bairro ou descrição...">
+      <select id="f-tipo"><option value="">Todos os tipos</option></select>
+      <select id="f-status">
+        <option value="">Todos os status</option>
+        <option value="aberto">Aberto</option>
+        <option value="em-analise">Em análise</option>
+        <option value="resolvido">Resolvido</option>
+      </select>
+    </div>
+    <div class="lista" id="lista"><div class="empty">Carregando...</div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, addDoc, updateDoc, deleteDoc, doc,
+    onSnapshot, query, orderBy, serverTimestamp, increment
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDRacV93y6OTrkRESHP31PzjEZXxKm_8RU",
+    authDomain: "problemas-urbanos-e7d91.firebaseapp.com",
+    projectId: "problemas-urbanos-e7d91",
+    storageBucket: "problemas-urbanos-e7d91.firebasestorage.app",
+    messagingSenderId: "203850728649",
+    appId: "1:203850728649:web:d00db9e70444496be6b918"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const colecao = collection(db, "problemas");
+  const auth = getAuth(app);
+
+  // Único usuário com permissão de exclusão (a senha fica só no Firebase Auth)
+  const ADMIN_EMAIL = "ldacruz91@gmail.com";
+  let ehAdmin = false;
+
+  const TIPOS = {
+    buraco: "🕳️ Buraco na via",
+    iluminacao: "💡 Iluminação pública",
+    lixo: "🗑️ Lixo / entulho",
+    esgoto: "🚰 Esgoto / vazamento",
+    calcada: "🚶 Calçada danificada",
+    sinalizacao: "🚦 Sinalização",
+    arvore: "🌳 Árvore / poda",
+    alagamento: "🌧️ Alagamento",
+    outro: "📌 Outro"
+  };
+  const STATUS = { "aberto": "Aberto", "em-analise": "Em análise", "resolvido": "Resolvido" };
+
+  const $ = (id) => document.getElementById(id);
+  const form = $("form"), campoId = $("id");
+  const campos = ["tipo", "status", "endereco", "bairro", "descricao", "autor"];
+  const btnSalvar = $("btn-salvar"), btnCancelar = $("btn-cancelar"), formTitulo = $("form-titulo");
+  const lista = $("lista"), busca = $("busca"), fTipo = $("f-tipo"), fStatus = $("f-status");
+
+  // Preenche selects de tipo
+  for (const [v, t] of Object.entries(TIPOS)) {
+    $("tipo").add(new Option(t, v));
+    fTipo.add(new Option(t, v));
+  }
+
+  // Apoios já dados neste navegador (evita apoiar duas vezes)
+  let apoiados = new Set();
+  try { apoiados = new Set(JSON.parse(localStorage.getItem("apoiados") || "[]")); } catch {}
+  const salvarApoiados = () => { try { localStorage.setItem("apoiados", JSON.stringify([...apoiados])); } catch {} };
+
+  let problemas = [];
+
+  function toast(msg, tipo = "") {
+    const t = $("toast");
+    t.textContent = msg;
+    t.className = "toast show " + tipo;
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.className = "toast", 2800);
+  }
+
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const fmtData = (ts) => ts?.toDate
+    ? ts.toDate().toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
+    : "agora";
+
+  // READ — tempo real
+  onSnapshot(query(colecao, orderBy("criadoEm", "desc")), (snap) => {
+    problemas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderizar();
+  }, (erro) => {
+    console.error(erro);
+    lista.innerHTML = `<div class="empty">Erro ao carregar: ${esc(erro.message)}</div>`;
+    toast("Erro ao ler dados. Verifique as regras do Firestore.", "erro");
+  });
+
+  function renderizar() {
+    $("st-total").textContent = problemas.length;
+    $("st-aberto").textContent = problemas.filter(p => p.status === "aberto").length;
+    $("st-analise").textContent = problemas.filter(p => p.status === "em-analise").length;
+    $("st-resolvido").textContent = problemas.filter(p => p.status === "resolvido").length;
+
+    const termo = busca.value.trim().toLowerCase();
+    const filtrados = problemas.filter(p =>
+      (!fTipo.value || p.tipo === fTipo.value) &&
+      (!fStatus.value || p.status === fStatus.value) &&
+      [p.endereco, p.bairro, p.descricao].some(v => (v || "").toLowerCase().includes(termo)));
+
+    if (!filtrados.length) {
+      lista.innerHTML = `<div class="empty">${problemas.length ? "Nenhum problema encontrado com esses filtros." : "Nenhum problema registrado ainda."}</div>`;
+      return;
+    }
+
+    lista.innerHTML = filtrados.map(p => {
+      const st = STATUS[p.status] ? p.status : "aberto";
+      const ja = apoiados.has(p.id);
+      return `
+      <div class="item ${st}">
+        <div class="item-top">
+          <div>
+            <div class="tipo">${esc(TIPOS[p.tipo] || p.tipo)}</div>
+            <div class="local">📍 ${esc(p.endereco)} — ${esc(p.bairro)}</div>
+          </div>
+          <span class="badge ${st}">${STATUS[st]}</span>
+        </div>
+        <div class="desc">${esc(p.descricao)}</div>
+        <div class="meta">Registrado por ${esc(p.autor || "Anônimo")} em ${fmtData(p.criadoEm)}${p.atualizadoEm ? " · atualizado em " + fmtData(p.atualizadoEm) : ""}</div>
+        <div class="item-acoes">
+          <button class="btn-sm btn-apoio ${ja ? "ja" : ""}" data-acao="apoiar" data-id="${p.id}" ${ja ? "disabled" : ""}>
+            👍 ${ja ? "Você confirmou" : "Também vi isso"} (${p.apoios || 0})
+          </button>
+          <select data-acao="status" data-id="${p.id}" title="Alterar status">
+            ${Object.entries(STATUS).map(([v, t]) => `<option value="${v}" ${v === st ? "selected" : ""}>${t}</option>`).join("")}
+          </select>
+          <button class="btn-sm btn-edit" data-acao="editar" data-id="${p.id}">Editar</button>
+          ${ehAdmin ? `<button class="btn-sm btn-del" data-acao="excluir" data-id="${p.id}">Excluir</button>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  [busca, fTipo, fStatus].forEach(el => el.addEventListener("input", renderizar));
+
+  // CREATE / UPDATE
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const dados = Object.fromEntries(campos.map(c => [c, $(c).value.trim()]));
+    if (!dados.tipo || !dados.endereco || !dados.bairro || !dados.descricao)
+      return toast("Preencha os campos obrigatórios.", "erro");
+
+    btnSalvar.disabled = true;
+    try {
+      if (campoId.value) {
+        await updateDoc(doc(db, "problemas", campoId.value), { ...dados, atualizadoEm: serverTimestamp() });
+        toast("Problema atualizado!", "ok");
+      } else {
+        await addDoc(colecao, { ...dados, apoios: 0, criadoEm: serverTimestamp() });
+        toast("Problema registrado. Obrigado!", "ok");
+      }
+      limparForm();
+    } catch (erro) {
+      console.error(erro);
+      toast("Erro ao salvar: " + erro.message, "erro");
+    } finally {
+      btnSalvar.disabled = false;
+    }
+  });
+
+  // Ações nos cards
+  lista.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-acao]");
+    if (!btn) return;
+    const p = problemas.find(x => x.id === btn.dataset.id);
+    if (!p) return;
+
+    if (btn.dataset.acao === "editar") {
+      campoId.value = p.id;
+      campos.forEach(c => $(c).value = p[c] || "");
+      formTitulo.textContent = "Editar problema";
+      btnSalvar.textContent = "Salvar alterações";
+      btnCancelar.hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    if (btn.dataset.acao === "apoiar") {
+      btn.disabled = true;
+      try {
+        await updateDoc(doc(db, "problemas", p.id), { apoios: increment(1) });
+        apoiados.add(p.id); salvarApoiados();
+        renderizar();
+        toast("Confirmação registrada!", "ok");
+      } catch (erro) {
+        btn.disabled = false;
+        toast("Erro: " + erro.message, "erro");
+      }
+    }
+
+    // DELETE
+    if (btn.dataset.acao === "excluir") {
+      if (!ehAdmin) return toast("Apenas o administrador pode excluir.", "erro");
+      if (!confirm(`Excluir o registro em "${p.endereco}"?`)) return;
+      try {
+        await deleteDoc(doc(db, "problemas", p.id));
+        if (campoId.value === p.id) limparForm();
+        toast("Registro excluído.", "ok");
+      } catch (erro) {
+        toast("Erro ao excluir: " + erro.message, "erro");
+      }
+    }
+  });
+
+  // Alteração rápida de status (UPDATE)
+  lista.addEventListener("change", async (e) => {
+    const sel = e.target.closest("select[data-acao='status']");
+    if (!sel) return;
+    try {
+      await updateDoc(doc(db, "problemas", sel.dataset.id), { status: sel.value, atualizadoEm: serverTimestamp() });
+      toast("Status alterado para " + STATUS[sel.value], "ok");
+    } catch (erro) {
+      toast("Erro: " + erro.message, "erro");
+    }
+  });
+
+  btnCancelar.addEventListener("click", limparForm);
+
+  // ===== Login do administrador =====
+  const modal = $("modal-login"), loginErro = $("login-erro"), btnEntrar = $("btn-entrar");
+  const abrirLogin = () => { loginErro.textContent = ""; $("form-login").reset(); modal.classList.add("show"); $("login-email").focus(); };
+  const fecharLogin = () => modal.classList.remove("show");
+
+  $("btn-login").addEventListener("click", abrirLogin);
+  $("btn-fechar-login").addEventListener("click", fecharLogin);
+  modal.addEventListener("click", (e) => { if (e.target === modal) fecharLogin(); });
+
+  $("form-login").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = $("login-email").value.trim().toLowerCase();
+    const senha = $("login-senha").value;
+    loginErro.textContent = "";
+
+    if (email !== ADMIN_EMAIL) { loginErro.textContent = "Acesso negado."; return; }
+
+    btnEntrar.disabled = true;
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+      fecharLogin();
+      toast("Bem-vindo, administrador!", "ok");
+    } catch (erro) {
+      console.error(erro);
+      loginErro.textContent = "Acesso negado.";
+    } finally {
+      btnEntrar.disabled = false;
+    }
+  });
+
+  $("btn-logout").addEventListener("click", async () => {
+    await signOut(auth);
+    toast("Você saiu.");
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    // Qualquer conta diferente do administrador é desconectada na hora
+    if (user && user.email?.toLowerCase() !== ADMIN_EMAIL) {
+      await signOut(auth);
+      return;
+    }
+    ehAdmin = !!user;
+    $("btn-login").hidden = ehAdmin;
+    $("btn-logout").hidden = !ehAdmin;
+    $("auth-info").textContent = ehAdmin ? "👤 " + user.email : "";
+    renderizar();
+  });
+
+  function limparForm() {
+    form.reset();
+    campoId.value = "";
+    formTitulo.textContent = "Registrar problema";
+    btnSalvar.textContent = "Registrar";
+    btnCancelar.hidden = true;
+  }
+</script>
+</body>
+</html>
